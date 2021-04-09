@@ -25,9 +25,8 @@
 	let md;
 	let parser;
 	let value = "";
-	let type = 1;
-	$: goStruct = getGoStruct(value,type)
-
+	let type = 1; // 默认转结构体带json
+	$: goStruct = getGoStruct(value,type);
 	const initializeRemarkable = () => {
 		parser = window.SqlParser;
 	}
@@ -40,30 +39,56 @@
 			console.log("Parse Error")
 			 }
 		if (md != undefined && md.length >0){
-			console.log("Parse Success")
-			goStruct = "type "+changeNameFunc(md[0].name)+" struct { \n"
-			md[0].columns.forEach((item)=>{
-				if (item.type == "column") {
-					console.log(type)
-					switch (type){
-						case 1:
-							goStruct += ""+changeNameFunc(item.name)+" "+typeMap[item.data_type.type]+" "+"`json:\""+item.name+"\"` // "+item.comment+"\n";
-							break;
-						case 2:
-							goStruct += ""+changeNameFunc(item.name)+" "+typeMap[item.data_type.type]+" "+"`gorm:\""+item.name+"\",json:\""+item.name+"\"` // "+item.comment+"\n";
-							break;
-						case 3:
-							goStruct += item.name+",";
-							break;
-						case 4:
-							goStruct += '"'+item.name+'",';
-							break;
-					}
-				
-				}
+						switch (type){
+				case 1:
+					goStruct = "type "+changeNameFunc(md[0].name)+" struct { \n"
+					md[0].columns.forEach((item)=>{
+						if (item.type == "column") {
 
-			})
-			return goStruct + "}";
+							goStruct += ""+changeNameFunc(item.name)+" "+typeMap[item.data_type.type]+" "+"`json:\""+item.name+"\"` // "+item.comment+"\n";
+						}
+					})
+					return goStruct + "}";
+					break;
+				case 2:
+					goStruct = "type "+changeNameFunc(md[0].name)+" struct { \n"
+					md[0].columns.forEach((item)=>{
+						if (item.type == "column") {
+
+							goStruct += ""+changeNameFunc(item.name)+" "+typeMap[item.data_type.type]+" "+"`json:\""+item.name+"\" gorm:\"column:"+item.name+"\"` // "+item.comment+"\n";
+						}
+					})
+					return goStruct + "}";
+					break;
+				case 3:
+					md[0].columns.forEach((item)=>{
+						if (item.type == "column") {
+
+							goStruct += item.name+",";
+						}
+					})
+					return goStruct;
+					break;
+				case 4:
+					md[0].columns.forEach((item)=>{
+						if (item.type == "column") {
+
+							goStruct += '"'+item.name+'",';
+						}
+					})
+				  return goStruct;
+					break;
+				case 5:
+					goStruct = "type "+changeNameFunc(md[0].name)+" struct { \n"
+					md[0].columns.forEach((item)=>{
+						if (item.type == "column") {
+
+							goStruct += ""+changeNameFunc(item.name)+" "+typeMap[item.data_type.type]+" // "+item.comment+"\n";
+						}
+					})
+					return goStruct + "}";
+					break;
+			}
 		}
 		return "";
 	}
@@ -86,10 +111,21 @@
 </svelte:head>
 <div>Enter the table creation statement on the left</div>
 <hr />
-<input name="sql2struct" type="radio" checked on:click="{()=>{type=1}}" />convert Go struct |
-<input name="sql2struct" type="radio" on:click="{()=>{type=2}}" />with Gorm |
-<input name="sql2struct" type="radio" on:click="{()=>{type=3}}" />get table filelds |
-<input name="sql2struct" type="radio" on:click="{()=>{type=4}}" />get table fields with quote
+<div>
+<span on:click="{()=>{type=5}}">
+	<input name="sql2struct" type="radio" checked={type==5} />convert Go struct
+</span>|
+<span on:click="{()=>{type=1}}">
+<input name="sql2struct" type="radio" checked={type==1} on:click="{()=>{type=1}}" />with Json
+	</span>|
+<span on:click="{()=>{type=2}}">
+<input name="sql2struct" type="radio" checked={type==2} on:click="{()=>{type=2}}" />with Gorm </span>|
+<span on:click="{()=>{type=3}}">
+<input name="sql2struct" type="radio" checked={type==3} on:click="{()=>{type=3}}" />get table filelds </span>|
+<span on:click="{()=>{type=4}}">
+<input name="sql2struct" type="radio" checked={type==4} on:click="{()=>{type=4}}" />get table fields with quote
+	</span>
+</div>
 <hr />
 <div id="sql">
 	<textarea  rows="30" cols="80"
